@@ -1,6 +1,7 @@
 import requests
 import time
-import RPi.GPIO as io 
+import RPi.GPIO as io
+import json
 
 #set pin numbering to Broadcom internal numbering
 io.setmode(io.BCM)
@@ -38,127 +39,71 @@ displayOption = 0
 sources = getSources()
 
 while():
+    getData(sources[displayOption])
     
-    displayOptionLight(displayOption)
-   
-    requestURL = sources[displayOption][2]
+    #display LED for correstonsing label for displayOption
+    displayOptionLED()
     
-    response = requests.get(requestURL)
+    #wait for 5 minutes to rerun the code
+    time.sleep(300)
+
+#Selecting which relay to turn on based on the limits
+def displayStatus(numEvents, limit):
+    print "The number of events is: " + numEvents + " of limit " + limit
     
-    print response
+    #if the traffic is less than 50% of limit 
+    if (numEvents < (limit/2)):
+        setRelays(0)
+        
+    elif (numEvents < (3*limit/4)):
+        setRelays(1)
     
-    numEvents = response.sources[displayOption][3]
+    elif (numEvents >= (3*limit/4)):
+        setRelays(2)
+		
+    else: print "numEvents is out of bounds"
+
+#turn on only the indicated relay
+def setRelays(toggleRelay):
+    for idx, relay in enumerate(relays):
+        print(idx, relay)
+        
+        if idx == toggleRelay:
+            print "Switching Relay " + toggleRelay + " On"
+            relay.status = True
+            io.output(relay.pin, True)
+        else:
+            print "Switching Relay " + toggleRelay + " Off"
+            relay.status = False
+            io.output(relay.pin, False)
     
-    limit = response.sources[displayOption][4]
-    
-    displayStatus(numEvents, limit)
-    
-    
-    
-    #display light for correstonsing label for displayOption
-    displayOptionLight(displayOption, sources)
+#display led indicating which type of data is being displayed
+def displayOptionLED():
+    #set GPIO pin attached to specified pin high based on which option is displayed
+    print "the currently selected data type is: " + sources[displayOption]['name']
     
     #code to cycle through the diferent display options (GA, Keen, etc). Reset after each loop
     if (displayOption == len(sources)): 
         displayOption = 0
     else: displayOption+=1
     
-    #wait for 5 minutes to rerun the code
-    time.sleep(300)
-
-#disyplay traffic data using relay
-def displayStatus(numEvents, limit):
-    print "The number of events is: " + numEvents + " of limit " + limit
-    
-    #if the traffic is less than 50% of limit 
-    if (numEvents < (limit/2)):
-        print("Switching Relay 0 On")
-        relays[0].status = True
-        io.output(relays[0].pin, True)
-        relays[1].status = False
-        io.output(relays[1].pin, False)
-        relays[2].status = False
-        io.output(relays[2].pin, False)
-        
-    elif (numEvents < (3*limit/4)):
-        print("Switching Relay 1 On")
-        relays[0].status = False
-        io.output(relays[0].pin, False)
-        relays[1].status = True
-        io.output(relays[1].pin, True)
-        relays[2].status = False
-        io.output(relays[2].pin, False)
-    
-    elif (numEvents >= (3*limit/4)):
-        print("Switching Relay 2 On")
-        relays[0].status = False
-        io.output(relays[0].pin, False)
-        relays[1].status = False
-        io.output(relays[1].pin, False)
-        relays[2].status = True
-        io.output(relays[2].pin, True)
-		
-    else: print "numEvents is out of bounds"
-    
-#display led indicating which type of data is being displayed
-def displayOptionLight(displayOption, sources):
-    #set GPIO pin attached to specified pin high based on which option is displayed
-    print "the currently selected data type is: " + sources[displayOption][0]
-    
-    
-def getAPIKey(filename):
-    #read in API keys from file
-    file = open('./' + filename , 'r')
-    apikey = file.readline().replace("\n", '')
-    file.close()
-    return apikey
-    
-def getData(filename, ):
-    temp = []
-    sources = []
-    
-    count = 0
-    
-    #read in API keys from file
-    #file = open('./data.txt', 'r')
-    
-    with open('./data.txt', 'r') as openfileobject:
-        for line in openfileobject:
-            if line == '':
-                sources.append(temp)
-                count = 0
-            else: temp[count] = line
-            
-            count +=1
-    
-    
-    #while ():
-    #    temp[0] = file.readline().replace("\n", '')
-    #    temp[1] = file.readline().replace("\n", '')
-    #    #read in URL
-    #    temp[2] = file.readline().replace("\n", '')
-    #    #read in response value being looked for
-    #    temp[3] = file.readline().replace("\n", '')
-    #    dump = file.readline().replace("\n", '')
-    #    sources.append(temp)
-    
-    file.close()
-    return sources
-
 def getSources():
-    sources = []
-    temp = []
+    with open('/home/pi/web-traffic-status-lights/sources.json') as sources_file:    
+        sources = json.load(sources_file)
     
-    #read in API keys from file
-    file = open('./sources.txt', 'r')
-    while ():
-        temp[0] = file.readline().replace("\n", '')
-        temp[1] = file.readline().replace("\n", '')
-        #read in URL
-        temp[2] = file.readline().replace("\n", '')
-        #read in response value being looked for
-        temp[3] = file.readline().replace("\n", '')
-        dump = file.readline().replace("\n", '')
-        sources.append(temp)
-    file.close()
-    return sources
+    print sources['sources']
+    
+    return sources['sources']
+    
+def getData(source):
+    requestURL = source['requestURL']
+    
+    response = requests.get(requestURL)
+    
+    print response
+    
+    numEvents = response.source['payloadValue']
+    
+    limit = response.source['threshold']
+    
+    displayStatus(numEvents, limit)

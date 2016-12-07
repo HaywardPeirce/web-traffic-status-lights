@@ -6,13 +6,8 @@ Example data sources include:
 - Keen
 - Datadog
 
-## Structure of the sources.txt file
-Source Name
-API key
-Request URL
-desired response payload value
-desired 100% threshold
-blank line
+## Sources File
+The information for each of the data sources that are to be displayed should be located in the sources.json file. An example of what this file should look like can be found in the example_sources.json file.
 
 TODO:
 - dynamic threshold
