@@ -2,11 +2,12 @@ import requests
 import time
 import RPi.GPIO as io
 import json
+import adafruitIO
 
 #set pin numbering to Broadcom internal numbering
 io.setmode(io.BCM)
 
-class Relay(object):
+class Output(object):
     pin = 0
     state = 0
 
@@ -18,13 +19,30 @@ class Relay(object):
 relays = [None, None, None, None]
 
 for relay in relays:
-    relay = Relay(0,False)
+    relay = Output(0,False)
 
 #use software pin numbering
 relays[0].pin = 17
 relays[1].pin = 18
 relays[2].pin = 21
 relays[3].pin = 22
+
+optionLEDs = [None, None, None, None]
+
+for optionLED in optionLEDs:
+    optionLED = Output(0,False)
+
+for optionLED in optionLEDs:
+    #configure the pins to be used as outputs
+    io.setup(optionLED.pin, io.OUT)
+    #set inital pin states to off
+    io.output(optionLED.pin, False)
+    
+#use software pin numbering
+optionLEDs[0].pin = 0
+optionLEDs[1].pin = 0
+optionLEDs[2].pin = 0
+optionLEDs[3].pin = 0
 
 for relay in relays:
     #configure the pins to be used as outputs
@@ -38,7 +56,12 @@ displayOption = 0
 
 sources = getSources()
 
+#main loop
 while():
+    
+    displayOption = adafruitIO.getSourceOption
+    
+    #lookup the request information for the source being displayed
     getData(sources[displayOption])
     
     #display LED for correstonsing label for displayOption
@@ -82,10 +105,12 @@ def displayOptionLED():
     #set GPIO pin attached to specified pin high based on which option is displayed
     print "the currently selected data type is: " + sources[displayOption]['name']
     
+    
+    
     #code to cycle through the diferent display options (GA, Keen, etc). Reset after each loop
-    if (displayOption == len(sources)): 
-        displayOption = 0
-    else: displayOption+=1
+    #if (displayOption == len(sources)): 
+    #    displayOption = 0
+    #else: displayOption+=1
     
 def getSources():
     with open('/home/pi/web-traffic-status-lights/sources.json') as sources_file:    
